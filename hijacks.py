@@ -47,6 +47,14 @@ def autocast_init(self, device_type, dtype=None, enabled=True, cache_enabled=Non
     else:
         return original_autocast_init(self, device_type=device_type, dtype=dtype, enabled=enabled, cache_enabled=cache_enabled)
 
+original_cuda_synchronize = torch.cuda.synchronize
+@wraps(torch.cuda.synchronize)
+def cuda_synchronize(dev=None):
+    if type(dev) == int or dev is None:
+        torch.xpu.synchronize(dev)
+        return
+    torch.xpu.synchronize(return_xpu(dev))
+
 # Latent Antialias CPU Offload:
 original_interpolate = torch.nn.functional.interpolate
 @wraps(torch.nn.functional.interpolate)
@@ -340,6 +348,7 @@ def ipex_hijacks(legacy=True):
     torch.nn.DataParallel = DummyDataParallel
     torch.UntypedStorage.is_cuda = is_cuda
     torch.amp.autocast_mode.autocast.__init__ = autocast_init
+    torch.cuda.synchronize = cuda_synchronize
 
     torch.nn.functional.scaled_dot_product_attention = scaled_dot_product_attention
     torch.nn.functional.group_norm = functional_group_norm
