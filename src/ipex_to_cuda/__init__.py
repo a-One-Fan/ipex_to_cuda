@@ -146,7 +146,12 @@ def ipex_init(): # pylint: disable=too-many-statements
                 torch.xpu.empty_cache = lambda: None
             torch.cuda.empty_cache = torch.xpu.empty_cache
 
-            torch.cuda.memory = torch.xpu.memory
+            if torch_version[0] >= 2: #comfy_aimdo
+                old_cpa = torch.cuda.memory.CUDAPluggableAllocator
+                torch.cuda.memory = torch.xpu.memory
+                torch.xpu.memory.CUDAPluggableAllocator = old_cpa
+            else:
+                torch.cuda.memory = torch.xpu.memory
             torch.cuda.memory_stats = torch.xpu.memory_stats
             torch.cuda.memory_allocated = torch.xpu.memory_allocated
             torch.cuda.max_memory_allocated = torch.xpu.max_memory_allocated
